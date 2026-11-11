@@ -1,113 +1,76 @@
-// ============================================
-// ESTADO DE LA APLICACIÓN
-// ============================================
-let currentLang = 'es';
+(() => {
+  const menuButton = document.getElementById("hamburgerBtn");
+  const nav = document.getElementById("navLinks");
+  const languageToggle = document.getElementById("langToggle");
+  const year = document.getElementById("currentYear");
 
-// ============================================
-// MENÚ HAMBURGUESA
-// ============================================
-const hamburgerBtn = document.getElementById('hamburgerBtn');
-const navLinks = document.getElementById('navLinks');
+  if (year) year.textContent = new Date().getFullYear();
 
-// Toggle del menú mobile
-hamburgerBtn.addEventListener('click', () => {
-  hamburgerBtn.classList.toggle('active');
-  navLinks.classList.toggle('active');
-  
-  // Prevenir scroll cuando el menú está abierto
-  if (navLinks.classList.contains('active')) {
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.body.style.overflow = '';
+  // Mobile navigation
+  const closeMenu = () => {
+    if (!menuButton || !nav) return;
+    menuButton.setAttribute("aria-expanded", "false");
+    menuButton.setAttribute("aria-label", "Abrir menú");
+    nav.classList.remove("is-open");
+  };
+
+  if (menuButton && nav) {
+    menuButton.addEventListener("click", () => {
+      const isOpen = menuButton.getAttribute("aria-expanded") === "true";
+      menuButton.setAttribute("aria-expanded", String(!isOpen));
+      menuButton.setAttribute("aria-label", isOpen ? "Abrir menú" : "Cerrar menú");
+      nav.classList.toggle("is-open", !isOpen);
+    });
+
+    nav.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", closeMenu);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMenu();
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 700) closeMenu();
+    });
   }
-});
 
-// Cerrar menú al hacer click en un link
-document.querySelectorAll('.links-btn a').forEach(link => {
-  link.addEventListener('click', () => {
-    hamburgerBtn.classList.remove('active');
-    navLinks.classList.remove('active');
-    document.body.style.overflow = '';
-  });
-});
-
-// Cerrar menú al hacer click fuera
-navLinks.addEventListener('click', (e) => {
-  if (e.target === navLinks) {
-    hamburgerBtn.classList.remove('active');
-    navLinks.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-});
-
-// ============================================
-// TRADUCCIÓN
-// ============================================
-const langToggle = document.getElementById('langToggle');
-
-langToggle.addEventListener('change', () => {
-  currentLang = currentLang === 'es' ? 'en' : 'es';
-  translatePage();
-});
-
-function translatePage() {
-  document.querySelectorAll('[data-es]').forEach(element => {
-    const text = element.getAttribute(`data-${currentLang}`);
-    if (text) {
-      element.textContent = text;
+  // Spanish / English content
+  const setLanguage = (language) => {
+    document.documentElement.lang = language;
+    document.querySelectorAll("[data-es][data-en]").forEach((element) => {
+      const value = element.dataset[language];
+      if (value !== undefined) element.textContent = value;
+    });
+    if (languageToggle) {
+      languageToggle.setAttribute(
+        "aria-label",
+        language === "es" ? "Cambiar idioma a inglés" : "Switch language to Spanish"
+      );
     }
-  });
-}
+  };
 
-// ============================================
-// SMOOTH SCROLL
-// ============================================
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function (e) {
-    e.preventDefault();
-    
-    const targetId = this.getAttribute('href').substring(1);
-    const targetSection = document.getElementById(targetId);
-    
-    if (targetSection) {
-      const blockSetting = targetId === 'proyectos' ? 'start' : 'center';
-      
-      targetSection.scrollIntoView({
-        behavior: 'smooth',
-        block: blockSetting,
-        inline: 'center'
+  if (languageToggle) {
+    languageToggle.addEventListener("change", () => {
+      setLanguage(languageToggle.checked ? "en" : "es");
+    });
+  }
+
+  // Subtle reveal on scroll; content remains visible if observer is unavailable.
+  const sections = document.querySelectorAll(".section");
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver((entries, currentObserver) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          currentObserver.unobserve(entry.target);
+        }
       });
-    }
-  });
-});
+    }, { threshold: 0.08 });
 
-// ============================================
-// ANIMACIONES AL SCROLL
-// ============================================
-const observerOptions = {
-  threshold: 0.1,
-  rootMargin: '0px 0px -100px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-    }
-  });
-}, observerOptions);
-
-document.querySelectorAll('.section').forEach(section => {
-  observer.observe(section);
-});
-
-// ============================================
-// CERRAR MENÚ AL CAMBIAR TAMAÑO DE VENTANA
-// ============================================
-window.addEventListener('resize', () => {
-  if (window.innerWidth > 968) {
-    hamburgerBtn.classList.remove('active');
-    navLinks.classList.remove('active');
-    document.body.style.overflow = '';
+    sections.forEach((section) => {
+      section.classList.add("reveal-ready");
+      observer.observe(section);
+    });
   }
-});
+})();
